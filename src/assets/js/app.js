@@ -45,6 +45,8 @@ app.nearbyStations = [];
 
 app.transitTypeSelected = 'light_rail_station';
 
+app.transitMapMarkerImage = 'assets/images/light-rail-marker.png'
+
 // app.depatureTimes = app.transitPickupLocation.departTable;
 
 app.estimatedTravelTime;
@@ -56,6 +58,8 @@ app.confrimedDepatureTimes = [];
 app.map;
 
 app.mapCenter;
+
+app.appLoaded = false;
 
 app.defualtMapZoom = 15;
 
@@ -200,27 +204,6 @@ app.modals = {
 //===================================
 //         DISPLAY METHODS
 //===================================
-
-app.displayDetectLocation = function(visible) {
-    app.currentModal = app.el.$modalDetectLocation;
-    if(visible) {
-        app.el.$modalDetectLocation.addClass('fadeIn');
-    }
-    else {
-        app.el.$modalDetectLocation.addClass('fadeOut');
-    }
-}
-
-app.displaySearchForLocation = function(visible) {
-    app.currentModal = app.el.$modalDetectLocation;
-    if(visible) {
-        app.el.$modalSearchForLocation.removeClass('disabled');
-        app.el.$modalSearchForLocation.addClass('fadeIn');
-    }
-    else {
-        app.el.$modalSearchForLocation.addClass('fadeOut');
-    }
-}
 
 app.displayUserLocation = function(visible) {
     if(visible) {
@@ -411,13 +394,10 @@ app.generateMapMarker = function(place, type = 'transit') {
     const marker = new google.maps.Marker({
         map: null,
         position: place.geometry.location
-        // icon: "assets/images/mapIcon.png"
     });
 
     google.maps.event.addListener(marker, 'click', function() {
         let content = '';
-        // app.infoWindow.setContent(content);
-        //         // app.infoWindow.open(app.map, markerThis); 
         if(type === 'user') {
             content = `
                 ${place.name} <br>
@@ -437,7 +417,6 @@ app.generateMapMarker = function(place, type = 'transit') {
             });
         }
         else if(type === 'transit') {
-            // const viewDetailsButton = ;
             content = `
                 ${place.name} <br>
                 <button class="viewDetails">View Details</button>
@@ -449,17 +428,7 @@ app.generateMapMarker = function(place, type = 'transit') {
                 app.setRouteTo(place.geometry.location);
                 app.displayRouteDetails(place.geometry.location);
             });
-
-            // app.nearbyMapMarkers.infoWindow
-            // // const markerThis = this;
-            // const coords = place.geometry.location;
-            // let stopTimesResponse;
-            // app.userMapZoom = app.map.getZoom();
-            // app.displayNearbyMapMarkers(false);
-            // app.displayCurrentRoute(true);
         }
-        
-        
     });
 
     return marker;
@@ -471,7 +440,9 @@ app.generateNearbyLocationMarkers = function(locations) {
     app.nearbyMapMarkers.markers = [];
 
     for (let i = 0; i < locations.length; i++) {
-        app.nearbyMapMarkers.markers.push(app.generateMapMarker(locations[i], 'transit'));
+        let marker = app.generateMapMarker(locations[i], 'transit');
+        marker.setIcon(app.transitMapMarkerImage);
+        app.nearbyMapMarkers.markers.push(marker);
     }
 };
 
@@ -484,7 +455,7 @@ app.setUserLocation = function(pos) {
             location: app.userLocation.location
         }
     }, 'user');
-    app.userLocation.marker.setIcon("assets/images/marker.png");
+    app.userLocation.marker.setIcon("assets/images/user.png");
     app.map.setCenter(app.userLocation.location);
 
     app.displayUserLocation(true);
@@ -728,11 +699,13 @@ app.events = function() {
             $(this).addClass('selected');
             $('.bus.transitType').removeClass('selected');
             app.transitTypeSelected = 'light_rail_station';
+            app.transitMapMarkerImage = 'assets/images/light-rail-marker.png'
         }
         else if(buttonClicked.val() === 'tranistTypeBus') {
             $(this).addClass('selected');
             $('.rail.transitType').removeClass('selected');
             app.transitTypeSelected = 'bus_station';
+            app.transitMapMarkerImage = 'assets/images/bus-marker.png'
         }
 
         

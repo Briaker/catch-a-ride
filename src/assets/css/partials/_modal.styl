@@ -1,0 +1,53 @@
+// MODAL
+#modalWrapper
+    position absolute
+    top 0
+    left 0
+    bottom 0
+    right 0
+    background rgba(0,0,0,0.3)
+    z-index 1
+    display flex
+    opacity 1
+    transition opacity ease 0.1s
+    
+#modalInnerWrapper
+    width 100%
+    margin 2rem
+    border-radius 2px
+    background #FFFFFF
+    display flex
+    
+.modalContent
+    width 100%
+    flexCenter()
+    flex-direction column
+
+.fadeOut
+    animation 0.4s ease-in-out 0s fadeOut forwards
+    
+.fadeIn
+    animation 0.4s ease-in-out 0s fadeIn forwards
+        
+.disabled, .disabled > *, #modalWrapper.disabled
+    display none
+    
+.loadingIndicator
+    background url('../images/loading.png')
+    background-size cover
+    background-position center center
+    background-repeat no-repeat
+    transition opacity linear 0.3s
+    animation 1s linear 0s loadingIndicator infinite
+    opacity 1
+    
+.loadingIndicator.hide
+    opacity 0
+
+.loadingIndicator.small
+    width 20px
+    height 20px
+    
+.loadingIndicator.large
+    width 80px
+    height 80px

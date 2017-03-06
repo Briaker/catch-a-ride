@@ -202,6 +202,9 @@ body {
   width: 100%;
   height: 100%;
 }
+h1 {
+  text-align: center;
+}
 button {
   border-radius: 2px;
   border: none;
@@ -229,6 +232,7 @@ button {
   width: 1400px;
   height: 100vh;
   min-height: 600px;
+  width: 100%;
   background: #fff;
   display: -webkit-box;
   display: -ms-flexbox;
@@ -245,7 +249,7 @@ button {
       -ms-flex-direction: column;
           flex-direction: column;
 }
-.resultsWrapper {
+.innerWrapper {
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
@@ -254,9 +258,13 @@ button {
   position: relative;
 }
 .findNearByButtonWrapper {
-  left: 50%;
-  -webkit-transform: translateX(-50%);
-          transform: translateX(-50%);
+  width: 100%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
   bottom: 2rem;
   position: absolute;
   z-index: 4;
@@ -281,33 +289,6 @@ button.rail {
 button.transitType.selected {
   background-color: #454444;
   box-shadow: 0px 0px 0px 5px #5f9ea0;
-}
-section.resultsContainer {
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  width: 30%;
-  background: #daa520;
-}
-#results,
-#resultTimes {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  padding: 1rem;
-}
-.resultItem {
-  margin: 0.25rem 0;
-  background: #e8c15f;
-  cursor: pointer;
-  padding: 0.25rem;
-}
-section.mapContainer {
-  position: relative;
-  width: 100%;
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
 }
 #modalWrapper {
   position: absolute;
@@ -384,25 +365,16 @@ section.mapContainer {
   width: 80px;
   height: 80px;
 }
-#map {
-  background: #ccc;
+section.mapContainer {
+  position: relative;
   width: 100%;
-}
-.userLocationWrapper {
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
-  -webkit-box-align: center;
-      -ms-flex-align: center;
-          align-items: center;
-  -webkit-box-pack: center;
-      -ms-flex-pack: center;
-          justify-content: center;
-  -webkit-box-orient: vertical;
-  -webkit-box-direction: normal;
-      -ms-flex-direction: column;
-          flex-direction: column;
-  margin: 2rem;
+}
+#map {
+  background: #ccc;
+  width: 100%;
 }
 #searchForm {
   display: -webkit-box;
@@ -414,7 +386,7 @@ section.mapContainer {
 }
 #searchBarWrapper,
 #searchField,
-#autocompleteWrapper {
+.ui-autocomplete {
   min-width: 500px;
 }
 #searchBarWrapper {
@@ -426,8 +398,7 @@ section.mapContainer {
   padding: 0 1rem;
 }
 #searchField,
-#submitButton,
-#autocompleteWrapper {
+#submitButton {
   margin: 1rem;
 }
 #autocompleteWrapper,
@@ -468,7 +439,7 @@ section.mapContainer {
   margin: 0;
   padding: 0;
   background: #fff;
-  width: 500px;
+  max-width: 500px;
 }
 #autocompleteWrapper {
   position: absolute;
@@ -511,7 +482,7 @@ section.mapContainer {
   padding: 0.5rem;
   list-style: none;
   color: #008000;
-  min-width: 400px;
+  width: 400px;
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
@@ -582,5 +553,14 @@ section.mapContainer {
   100% {
     -webkit-transform: rotate(360deg);
             transform: rotate(360deg);
+  }
+}
+@media (max-width: 767px) {
+  #searchBarWrapper,
+  #searchField,
+  .ui-autocomplete,
+  min-width initial,
+  .departureTime {
+    width: 240px;
   }
 }

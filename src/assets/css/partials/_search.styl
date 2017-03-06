@@ -1,0 +1,71 @@
+#searchForm
+    display flex
+    align-items flex-start
+
+#searchBarWrapper, #searchField, .ui-autocomplete
+    min-width 500px
+    
+#searchBarWrapper
+    position relative
+
+#searchField, #submitButton
+    height 3rem
+    padding 0 1rem
+    
+#searchField, #submitButton
+    margin 1rem
+    
+#autocompleteWrapper, #searchField, #submitButton, .ui-autocomplete, .departureTimesWrapper, .modalContent
+    border 1px solid #CCCCCC
+    box-shadow 0px 0px 5px 0px rgba(0,0,0,0.3)
+    
+#searchField
+    border-top-left-radius 2px
+    border-bottom-left-radius 2px
+    border-right 0
+    margin-right 0
+
+#submitButton
+    border-top-right-radius 2px
+    border-bottom-right-radius 2px
+    border-left 0
+    color #FFFFFF
+    background #333333
+    cursor pointer
+    transition background 0.3s ease
+    margin-left 0
+
+#submitButton:hover
+    background #444444
+
+.ui-helper-hidden-accessible
+    display none
+    
+.ui-autocomplete
+    z-index 2
+    list-style none
+    margin 0
+    padding 0
+    background #FFFFFF
+    max-width 500px
+
+#autocompleteWrapper
+    position absolute
+    top 3rem
+    left 0
+    background #FFFFFF
+    
+#autocompleteList
+    list-style none
+    margin 0
+    padding 0
+    
+.ui-menu-item
+    padding 0.5rem 1rem
+    cursor default
+
+.ui-menu-item:hover
+    background #DDDDDD
+    
+#autocompleteWrapper.hidden, #autocompleteWrapper.hidden > *
+    display none
