@@ -1,9 +1,23 @@
-const app = {};
-
+// Author: Brian Baker
+//
+// __/\\\\\\\\\\\\\__________/\\\\\\\\\\\\\\\________/\\\\\_____/\\\_        
+//  _\/\\\/////////\\\_______\/\\\///////////________\/\\\\\\___\/\\\_       
+//   _\/\\\_______\/\\\_______\/\\\___________________\/\\\/\\\__\/\\\_      
+//    _\/\\\\\\\\\\\\\\________\/\\\\\\\\\\\___________\/\\\//\\\_\/\\\_     
+//     _\/\\\/////////\\\_______\/\\\///////____________\/\\\\//\\\\/\\\_    
+//      _\/\\\_______\/\\\_______\/\\\___________________\/\\\_\//\\\/\\\_   
+//       _\/\\\_______\/\\\_______\/\\\___________________\/\\\__\//\\\\\\_  
+//        _\/\\\\\\\\\\\\\/___/\\\_\/\\\\\\\\\\\\\\\__/\\\_\/\\\___\//\\\\\_ 
+//         _\/////////////____\///__\///////////////__\///__\///_____\/////__
+//              Brian's         .       E-mazing        .       Netcode?
+//
 //  [API Data Flow]
 //      Google Map Api -> Get nearby staions -> User Chooses Station
 //      GTFS API -> Use Station Coords to find stop_code
 //      NextBus -> Using ttc and stop_code get stop times
+
+
+const app = {};
 
 // Google API Key
 app.apiKey = 'AIzaSyAntW9odX77bszvDfWhINFxPlr7DEol0_c';
@@ -41,19 +55,9 @@ app.nearbyMapMarkers = {
 // HackerYou's Location
 app.biasLocation = { lat: 43.6482644, lng: -79.3978587 };
 
-app.nearbyStations = [];
-
 app.transitTypeSelected = 'light_rail_station';
 
 app.transitMapMarkerImage = 'assets/images/light-rail-marker.png'
-
-// app.depatureTimes = app.transitPickupLocation.departTable;
-
-app.estimatedTravelTime;
-
-app.estimatedTimeOfArrival;
-
-app.confrimedDepatureTimes = [];
 
 app.map;
 
@@ -286,7 +290,6 @@ app.displayRouteDetails = function(coords) {
                 const predictions = timeInfo.body.predictions;
                 const validatedPredictions = [];
 
-                // console.log('[PREDICTIONS]',predictions)
                 if(predictions.length > 0) {
                     predictions.forEach(function(prediction) {
                         if(prediction.direction !== undefined) {
@@ -297,7 +300,6 @@ app.displayRouteDetails = function(coords) {
                     });
                 }
 
-                // console.log(validatedPredictions);
                 if(validatedPredictions[0] !== undefined) {
                     earliestTime = validatedPredictions[0];
                     if(validatedPredictions.length > 1) {
@@ -310,7 +312,6 @@ app.displayRouteDetails = function(coords) {
 
                     app.el.$departureTimes.empty();
                     app.departTimers.clearAll();
-                    console.log(earliestTime);
                     earliestTime.direction.prediction.forEach(function(prediction) {
                         const formattedTravelTime = app.formatTime(app.currentRoute.route.directions.routes[0].legs[0].duration.value * 1000);
                         $('#routeTitle').html(earliestTime.stopTitle)
@@ -323,10 +324,8 @@ app.displayRouteDetails = function(coords) {
                         );
 
                         const timer = window.setInterval(function() {
-                            console.log('tick');
                             let timeUntilDeparture = prediction.epochTime - Date.now();
                             if(timeUntilDeparture <= 0) {
-                                console.log('Stoping Timer! Zeroed out!');
                                 clearInterval(timer);
                             }
                             else {
@@ -464,11 +463,13 @@ app.setUserLocation = function(pos) {
 app.getUserLocation = function() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(position) {
-            // const pos = {
-            //     lat: position.coords.latitude,
-            //     lng: position.coords.longitude
-            // };
-            const pos = app.biasLocation;
+            const pos = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
+
+            // For Development Only
+            // const pos = app.biasLocation;
             
             app.setUserLocation(pos)
 
@@ -484,6 +485,7 @@ app.getUserLocation = function() {
             }
         });
     } else {
+
       // Browser doesn't support Geolocation or user has denied access
       app.handleLocationError(false, app.infoWindow, app.map.getCenter());
     }
@@ -707,9 +709,6 @@ app.events = function() {
             app.transitTypeSelected = 'bus_station';
             app.transitMapMarkerImage = 'assets/images/bus-marker.png'
         }
-
-        
-        
     });
 
     $('#searchForm').on('submit', function(event) {
@@ -738,13 +737,12 @@ app.events = function() {
         if(event.originalEvent.animationName === 'fadeIn') {
             $(event.target).removeClass('fadeIn');
         }
-
     });
 };
 
 
 //===================================
-//       APP INITIALIZATION
+//        APP INITIALIZATION
 //===================================
 
 app.init = function() {
