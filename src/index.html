@@ -4,7 +4,8 @@
         <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
         
         <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,700,800|Raleway:200,400,800|PT+Sans" rel="stylesheet">
-        
+
+        <link rel="stylesheet" href="assets/css/font-awesome.min.css">
         <link rel="icon" type="image/png" href="assets/images/favicon.png">
         <link type="text/css" rel="stylesheet" href="assets/css/style.css">
         <title>Catch A RIIIIIDE</title>
@@ -17,27 +18,13 @@
                 <div class="wrapper">
                     <div class="userLocationWrapper">
                         <div>
-                            <button class="exitRouteView" value="exitRouteView">Exit Route</button>
-                            <button class="getUserLocation" value="getUserLocation">Detect Location</button>
+<!--                             <button class="exitRouteView" value="exitRouteView">Exit Route</button>
+                            <button class="getUserLocation" value="getUserLocation">Detect Location</button> -->
                             <button class="findNearBy" value="findNearBy">Find Near By</button>
                         </div>
-                        <span>- OR -</span>
-                        
                     </div>
 
                     <div class="resultsWrapper">
-<!--                         <aside class="resultsContainer">
-                            <ul id="results">
-                                <li>Station A</li>
-                                <li>Station B</li>
-                                <li>Station C</li>
-                            </ul>
-                            <ul id="resultTimes">
-                                <li>Time A</li>
-                                <li>Time B</li>
-                                <li>Time C</li>
-                            </ul>
-                        </aside> -->
                         <section class="mapContainer">
                             <div id="modalWrapper">
                                 
@@ -51,19 +38,18 @@
                                     <form id="searchForm">
                                         <div id="searchBarWrapper">
                                             <input id="searchField" type="search" placeholder="Enter an addresss" "/>
-
-             <!--                                <div id="autocompleteWrapper" class="hidden">
-                                                <ul id="autocompleteList">
-                                                </ul>
-                                            </div> -->
                                         </div>
                                         <button id="submitButton" type="submit">Go</button>
                                     </form>
                                 </div>
 
                                 <div id="viewRouteDetails" class="modalContent disabled">
-                                    <h1>Route Details</h1>
-                                    <div id="routeDetails"></div>
+                                    <h1 id="routeTitle">Route Details</h1>
+                                    <h1 id="travelTime">Travel Time: </h1>
+                                    <div class="departureTimesWrapper">
+                                        <h1>Departure Times</h1>
+                                        <ul id="departureTimes"></ul>
+                                    </div>
                                     <button value="closeModal">Close</button>
                                 </div>
 

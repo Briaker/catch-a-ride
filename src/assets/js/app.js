@@ -63,6 +63,17 @@ app.infoWindow;
 
 app.userSearchInputResult;
 
+app.departTimers = {
+    timers: [],
+    clearAll: function() {
+        app.departTimers.timers.forEach(function(timer) {
+            window.clearInterval(timer);
+            timer = null;
+        });
+        app.departTimers.timers = [];
+    }
+};
+
 app.el = {
     $map: $('#map'),
     $results: $('#results'),
@@ -72,7 +83,7 @@ app.el = {
     $autocompleteList: $('#autocompleteList'),
     $modalWrapper: $('#modalWrapper'),
     $modalContent: $('.modalContent'),
-    $routeDetails: $('#routeDetails'),
+    $departureTimes: $('#departureTimes'),
     $modalDetectLocation: $('#detectingLocation'),
     $modalSearchForLocation: $('#searchForLocation'),
     $modalViewRouteDetails: $('#viewRouteDetails')
@@ -83,55 +94,90 @@ app.modals = {
     currentModal: null,
 
     display: function(modal) {
+        console.log('modals display', modal);
         app.modals.nextModal = modal;
         app.modals.currentModal.display(false);
     },
 
-    modalFadeOutCallback: function() {
+    modalFadeOutCallback: function(fadeInNext = true) {
+        console.log('modalFadeOutCallback', fadeInNext);
         if(app.modals.currentModal !== null && app.modals.nextModal !== null) {
             app.modals.currentModal = app.modals.nextModal;
-            app.modals.currentModal.display(true);
+            app.modals.currentModal.display(fadeInNext);
         }
     },
 
     detectLocation: {
         el: app.el.$modalDetectLocation,
+        enabled: true,
         display: function(visible) {
+            console.log('detectLocation?', visible);
             if(visible) {
                 app.displayModalWrapper(true);
                 app.modals.detectLocation.el.addClass('fadeIn');
                 app.modals.detectLocation.el.removeClass('disabled');
+                app.modals.detectLocation.enabled = true;
             }
             else {
                 app.modals.detectLocation.el.addClass('fadeOut');
+                if(!app.modals.detectLocation.enabled) {
+                    app.modals.modalFadeOutCallback(true);
+                }
+                app.modals.detectLocation.enabled = false;
             }
         }
     },
 
     searchForLocation: {
         el: app.el.$modalSearchForLocation,
+        enabled: false,
         display: function(visible) {
+            console.log('searchForLocation?', visible);
             if(visible) {
                 app.displayModalWrapper(true);
                 app.modals.searchForLocation.el.addClass('fadeIn');
                 app.modals.searchForLocation.el.removeClass('disabled');
+                app.modals.searchForLocation.enabled = true;
             }
             else {
                 app.modals.searchForLocation.el.addClass('fadeOut');
+                if(!app.modals.searchForLocation.enabled) {
+                    app.modals.modalFadeOutCallback(true);
+                }
+                app.modals.searchForLocation.enabled = false;
             }
         }
     },
 
     viewRouteDetails: {
         el: app.el.$modalViewRouteDetails,
+        enabled: false,
         display: function(visible) {
+            console.log('viewRouteDetails?', visible);
             if(visible) {
                 app.displayModalWrapper(true);
                 app.modals.viewRouteDetails.el.addClass('fadeIn');
                 app.modals.viewRouteDetails.el.removeClass('disabled');
+                app.modals.viewRouteDetails.enabled = true;
             }
             else {
                 app.modals.viewRouteDetails.el.addClass('fadeOut');
+                if(!app.modals.viewRouteDetails.enabled) {
+                    app.modals.modalFadeOutCallback(true);
+                }
+                app.modals.viewRouteDetails.enabled = false;
+            }
+        }
+    },
+
+    emptyModal: {
+        enabled: false,
+        display: function(visible) {
+            if(visible) {
+                app.modals.viewRouteDetails.enabled = true;
+            }
+            else {
+                app.modals.viewRouteDetails.enabled = false;
             }
         }
     },
@@ -153,8 +199,9 @@ app.displayModalWrapper = function(visible) {
         app.el.$modalWrapper.removeClass('disabled');
     }
     else {
+        app.departTimers.clearAll();
+        app.el.$modalWrapper.removeClass('fadeIn');
         app.el.$modalWrapper.addClass('fadeOut');
-        app.modals.currentModal.display(false);
     }
 }
 
@@ -238,39 +285,77 @@ app.displayRouteDetails = function(coords) {
     // Wait for Basic Transit Stop Info request to come back
     $.when(app.getTransitStopInfo(coords))
     .done(function(stopInfo) {
-        console.log('[Stop ID]', stopInfo, '[Position]', coords);
-        
         if($.isNumeric(stopInfo.stop_code)) {
             
             // Wait for Transit Stop Stop Times request to come back
             $.when(app.getTransitStopTimes(stopInfo.stop_code))
             .done(function(timeInfo) {
-                // console.log('Stop TIMES: ', timeInfo);
-                //[0].direction.prediction[0].epochTime
+                let earliestTime;
                 const predictions = timeInfo.body.predictions;
-                
                 const validatedPredictions = [];
 
                 // console.log('[PREDICTIONS]',predictions)
 
-                predictions.forEach(function(prediction){
+                predictions.forEach(function(prediction) {
                     if(prediction.direction !== undefined) {
-                        validatedPredictions.push(prediction);
+                        if(prediction.direction.prediction[0] !== undefined) {
+                            validatedPredictions.push(prediction);
+                        }
                     }
                 });
 
+                // console.log(validatedPredictions);
+
+                earliestTime = validatedPredictions[0];
+
                 if(validatedPredictions.length > 1) {
-                    let earliestTime = validatedPredictions[0];
-                    validatedPredictions.forEach(function(prediction){
-                        if(prediction.direction.prediction !== undefined) {
-                            validatedPredictions.push(prediction);
+                    validatedPredictions.forEach(function(prediction) {
+                        if(prediction.direction.prediction[0].epochTime < earliestTime.direction.prediction[0].epochTime) {
+                            earliestTime = prediction;
                         }
                     });
-                }
-                // console.log(validatedPredictions);
-                validatedPredictions
-                app.el.$routeDetails.text('Details here!');
-                app.modals.viewRouteDetails.display(true);
+                } 
+
+                app.el.$departureTimes.empty();
+                app.departTimers.clearAll();
+                earliestTime.direction.prediction.forEach(function(prediction) {
+                    const formattedTravelTime = app.formatTime(app.currentRoute.route.directions.routes[0].legs[0].duration.value * 1000);
+                    $('#routeTitle').html(earliestTime.stopTitle)
+                    $('#travelTime').html(`Travel Time: ${formattedTravelTime}`);
+                    
+                    const departTimer = $('<li>')
+                        .addClass('departureTime')
+                        .html(`--:-- <i class="fa fa-question" aria-hidden="true"></i>`)
+                        .appendTo(app.el.$departureTimes
+                    );
+
+                    const timer = window.setInterval(function() {
+                        console.log('tick');
+                        let timeUntilDeparture = prediction.epochTime - Date.now();
+                        if(timeUntilDeparture <= 0) {
+                            console.log('Stoping Timer! Zeroed out!');
+                            clearInterval(timer);
+                        }
+                        else {
+                            const formattedTime = app.formatTime(timeUntilDeparture);
+                            const travelTime = app.currentRoute.route.directions.routes[0].legs[0].duration.value * 1000;
+                            let icon = '<i class="fa fa-check" aria-hidden="true"></i>'
+                            // routeTitle
+                            if((timeUntilDeparture - travelTime) <= 0) {
+                                icon = '<i class="fa fa-times" aria-hidden="true"></i>'
+                                departTimer.addClass('cantMakeIt');
+                            }
+                            departTimer.html(`${formattedTime} ${icon}`);
+                        }
+                    },1000);
+
+                    app.departTimers.timers.push(timer)
+
+                });
+                // app.el.$departureTimes.text('Details here!');
+                console.log('Calling viewRouteDetails display');
+                app.modals.display(app.modals.viewRouteDetails);
+                // app.modals.viewRouteDetails.display(true);
             })
             .fail(function(error) {
                 console.error('ERROR: ', error);
@@ -291,6 +376,24 @@ app.displayRouteDetails = function(coords) {
 //         PROCESSING METHODS
 //===================================
 
+
+app.formatTime = function(milliseconds) {
+    let minutes = Math.floor((milliseconds / 1000 / 60));
+    let seconds = Math.floor(milliseconds / 1000 % 60);
+    let minutesLeadingZero = '';
+    let secondsLeadingZero = '';
+
+    if(String(minutes).length === 1) {
+        minutesLeadingZero = '0';
+    }
+
+    if(String(seconds).length === 1) {
+        secondsLeadingZero = '0';
+    }
+
+    return `${minutesLeadingZero}${minutes}:${secondsLeadingZero}${seconds}`;
+}
+
 app.generateMapMarker = function(place, type = 'transit') {
     const marker = new google.maps.Marker({
         map: null,
@@ -303,8 +406,6 @@ app.generateMapMarker = function(place, type = 'transit') {
         // app.infoWindow.setContent(content);
         //         // app.infoWindow.open(app.map, markerThis); 
         if(type === 'user') {
-            console.log(place);
-
             content = `
                 ${place.name} <br>
                 <button id="userDetectLocation">Detect New Location</button><span class="loadingIndicator small"></span><br>
@@ -331,7 +432,7 @@ app.generateMapMarker = function(place, type = 'transit') {
             app.nearbyMapMarkers.infoWindow.open(app.map, this);
 
             $('.viewDetails').on('click', function() {
-                console.log('VIEW DTAAILS (modal)');
+                app.setRouteTo(place.geometry.location);
                 app.displayRouteDetails(place.geometry.location);
             });
 
@@ -340,7 +441,6 @@ app.generateMapMarker = function(place, type = 'transit') {
             // const coords = place.geometry.location;
             // let stopTimesResponse;
             // app.userMapZoom = app.map.getZoom();
-            // app.setRouteTo(coords);
             // app.displayNearbyMapMarkers(false);
             // app.displayCurrentRoute(true);
         }
@@ -373,7 +473,6 @@ app.setUserLocation = function(pos) {
     app.userLocation.marker.setIcon("assets/images/marker.png");
     app.map.setCenter(app.userLocation.location);
 
-    console.log('[success] map location set');
     app.displayUserLocation(true);
 };
 
@@ -385,7 +484,6 @@ app.getUserLocation = function() {
             //     lng: position.coords.longitude
             // };
             const pos = app.biasLocation;
-            console.log('[success] location found');
             
             app.setUserLocation(pos)
 
@@ -439,7 +537,6 @@ app.getNearbyLocations = function(userLocation) {
 };
 
 app.setRouteTo = function(destination, mode = 'walking') {
-    // console.log(app.userLocation);
     if(app.userLocation.location !== undefined) {
         const directionsRequest = {
             origin: app.userLocation.location,
@@ -452,16 +549,10 @@ app.setRouteTo = function(destination, mode = 'walking') {
             if (status == google.maps.DirectionsStatus.OK) {
                 app.currentRoute.route.setDirections(response);
 
-                // console.log(response);
-                var step = 0;
-                // app.currentRoute.infoWindow = new google.maps.InfoWindow();
                 app.currentRoute.infoWindow.setContent(
-                    response.routes[0].legs[0].steps[step].distance.text + 
-                    "<br>" + response.routes[0].legs[0].steps[step].duration.text + " "
+                    response.routes[0].legs[0].steps[0].distance.text + 
+                    "<br>" + response.routes[0].legs[0].steps[0].duration.text + " "
                 );
-                app.currentRoute.infoWindow.setPosition(response.routes[0].legs[0].steps[step].end_location);
-                app.currentRoute.infoWindow.open(app.map);
-
             } else {
                 console.log("Unable to retrieve your route");
             }
@@ -507,7 +598,6 @@ app.getTransitStopInfo = function(stopCoords) {
 };
 
 app.getPlaceDetails = function(placeId) {
-    console.log('Gettings dtails');
     const response = $.ajax({
         url: 'https://proxy.hackeryou.com',
         dataType: 'json',
@@ -601,15 +691,15 @@ app.events = function() {
         const buttonClicked = $(this);
 
         if(buttonClicked.val() === 'getUserLocation') {
-            console.log('Get User Location!');
             app.getUserLocation();
         }
         else if(buttonClicked.val() === 'findNearBy'){
-            console.log('Get Nearby Locations');
             app.getNearbyLocations(app.userLocation.location);
         }
         else if(buttonClicked.val() === 'closeModal') {
+            console.log('Close Modal');
             app.displayModalWrapper(false);
+            app.modals.display(app.modals.emptyModal);
         }
         else if(buttonClicked.val() === 'exitRouteView') {
             app.displayCurrentRoute(false);
@@ -635,21 +725,12 @@ app.events = function() {
         }
     });
 
-    // app.el.$searchField.on('blur', function(event) {
-    //     // app.el.$autocompleteWrapper.addClass('hidden');
-    // });
-
-    // app.el.$searchField.on('focus', function(event) {
-    //     if(app.el.$autocompleteWrapper.html().length === 0) {
-    //         app.el.$autocompleteWrapper.removeClass('hidden');
-    //     }
-    // });
-
-    $('.container').on("webkitAnimationEnd oAnimationEnd msAnimationEnd animationend", function(event) {
+    $(app.el.$modalWrapper).on("webkitAnimationEnd oAnimationEnd msAnimationEnd animationend", function(event) {
         if(event.originalEvent.animationName === 'fadeOut') {
             $(event.target).addClass('disabled');
             $(event.target).removeClass('fadeOut');
-            app.modals.modalFadeOutCallback();
+            const fadeInNext = !($(event.target).is(app.el.$modalWrapper));
+            app.modals.modalFadeOutCallback(fadeInNext);
         }
 
         if(event.originalEvent.animationName === 'fadeIn') {
