@@ -26,6 +26,7 @@ module.exports = {
     },
     "proxy": false,
     "port": 3000,
+    "https": true,
     "middleware": false,
     "serveStatic": [],
     "ghostMode": false,
