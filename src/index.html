@@ -16,43 +16,44 @@
         <main>
             <div class="container">
                 <div class="wrapper">
-                    <div class="userLocationWrapper">
-                        <div>
+                    <div class="resultsWrapper">
+                        <div class="findNearByButtonWrapper">
 <!--                             <button class="exitRouteView" value="exitRouteView">Exit Route</button>
                             <button class="getUserLocation" value="getUserLocation">Detect Location</button> -->
+                            <button class="rail transitType selected" value="tranistTypeRail">rail</button>
                             <button class="findNearBy" value="findNearBy">Find Near By</button>
+                            <button class="bus transitType" value="tranistTypeBus">bus</button>
                         </div>
-                    </div>
-
-                    <div class="resultsWrapper">
                         <section class="mapContainer">
                             <div id="modalWrapper">
                                 
-                                <div id="detectingLocation" class="modalContent">
-                                    <h1>Detecting Location...</h1>
-                                    <span class="loadingIndicator large"></span>
-                                </div>
-
-                                <div id="searchForLocation" class="modalContent disabled">
-                                    <h1>Search For Your Location</h1>
-                                    <form id="searchForm">
-                                        <div id="searchBarWrapper">
-                                            <input id="searchField" type="search" placeholder="Enter an addresss" "/>
-                                        </div>
-                                        <button id="submitButton" type="submit">Go</button>
-                                    </form>
-                                </div>
-
-                                <div id="viewRouteDetails" class="modalContent disabled">
-                                    <h1 id="routeTitle">Route Details</h1>
-                                    <h1 id="travelTime">Travel Time: </h1>
-                                    <div class="departureTimesWrapper">
-                                        <h1>Departure Times</h1>
-                                        <ul id="departureTimes"></ul>
+                                <div id="modalInnerWrapper">
+                                    <div id="detectingLocation" class="modalContent">
+                                        <h1>Detecting Location...</h1>
+                                        <span class="loadingIndicator large"></span>
                                     </div>
-                                    <button value="closeModal">Close</button>
-                                </div>
 
+                                    <div id="searchForLocation" class="modalContent disabled">
+                                        <h1>Search For Your Location</h1>
+                                        <form id="searchForm">
+                                            <div id="searchBarWrapper">
+                                                <input id="searchField" type="search" placeholder="Enter an addresss" "/>
+                                            </div>
+                                            <button id="submitButton" type="submit">Go</button>
+                                        </form>
+                                        <button id="closeSearch" class="disabled" value="closeModal">Close</button>
+                                    </div>
+
+                                    <div id="viewRouteDetails" class="modalContent disabled">
+                                        <h1 id="routeTitle">Route Details</h1>
+                                        <h1 id="travelTime">Travel Time: </h1>
+                                        <div class="departureTimesWrapper">
+                                            <h1>Departure Times</h1>
+                                            <ul id="departureTimes"></ul>
+                                        </div>
+                                        <button value="closeModal">Close</button>
+                                    </div>
+                                </div>
                             </div>
                             <div id="map"></div>
                         </section>

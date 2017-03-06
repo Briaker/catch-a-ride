@@ -43,7 +43,7 @@ app.biasLocation = { lat: 43.6482644, lng: -79.3978587 };
 
 app.nearbyStations = [];
 
-app.transitPickupLocation;
+app.transitTypeSelected = 'light_rail_station';
 
 // app.depatureTimes = app.transitPickupLocation.departTable;
 
@@ -54,6 +54,8 @@ app.estimatedTimeOfArrival;
 app.confrimedDepatureTimes = [];
 
 app.map;
+
+app.mapCenter;
 
 app.defualtMapZoom = 15;
 
@@ -86,43 +88,71 @@ app.el = {
     $departureTimes: $('#departureTimes'),
     $modalDetectLocation: $('#detectingLocation'),
     $modalSearchForLocation: $('#searchForLocation'),
-    $modalViewRouteDetails: $('#viewRouteDetails')
+    $modalViewRouteDetails: $('#viewRouteDetails'),
+    $findNearByButtonWrapper: $('.findNearByButtonWrapper'),
+    $closeSearch: $('#closeSearch')
 };
 
 app.modals = {
-    nextModal: null,
     currentModal: null,
 
     display: function(modal) {
-        console.log('modals display', modal);
-        app.modals.nextModal = modal;
-        app.modals.currentModal.display(false);
+        if(!app.modals.modalWrapper.enabled) {
+            app.modals.modalWrapper.display(true);
+        }
+
+        if(app.modals.currentModal !== null) {
+            app.modals.currentModal.display(false);
+            app.modals.currentModal = null;
+            app.modals.currentModal = modal;
+        } 
+        else {
+            app.modals.currentModal = modal;
+            app.modals.currentModal.display(true);
+        }
     },
 
-    modalFadeOutCallback: function(fadeInNext = true) {
-        console.log('modalFadeOutCallback', fadeInNext);
-        if(app.modals.currentModal !== null && app.modals.nextModal !== null) {
-            app.modals.currentModal = app.modals.nextModal;
-            app.modals.currentModal.display(fadeInNext);
+    modalFadeOutCallback: function() {
+        if(app.modals.currentModal !== null) {
+            app.modals.currentModal.display(true);
+        }
+    },
+
+    modalWrapper: {
+        el: app.el.$modalWrapper,
+        enabled: false,
+        display: function(visible) {
+            if(visible) {
+                app.modals.modalWrapper.el.addClass('fadeIn');
+                app.modals.modalWrapper.el.removeClass('disabled');
+                app.el.$findNearByButtonWrapper.addClass('disabled');
+                app.modals.modalWrapper.enabled = true;
+            }
+            else {
+                app.departTimers.clearAll();
+                if(app.modals.currentModal !== null) {
+                    app.modals.currentModal.display(false);
+                    app.modals.currentModal = null;   
+                }
+                app.modals.modalWrapper.el.removeClass('fadeIn');
+                app.modals.modalWrapper.el.addClass('fadeOut');
+                app.el.$findNearByButtonWrapper.removeClass('disabled');
+                app.modals.modalWrapper.enabled = false;
+            }
         }
     },
 
     detectLocation: {
         el: app.el.$modalDetectLocation,
-        enabled: true,
+        enabled: false,
         display: function(visible) {
-            console.log('detectLocation?', visible);
-            if(visible) {
-                app.displayModalWrapper(true);
+            if(visible && !app.modals.detectLocation.enabled) {
                 app.modals.detectLocation.el.addClass('fadeIn');
                 app.modals.detectLocation.el.removeClass('disabled');
                 app.modals.detectLocation.enabled = true;
             }
             else {
                 app.modals.detectLocation.el.addClass('fadeOut');
-                if(!app.modals.detectLocation.enabled) {
-                    app.modals.modalFadeOutCallback(true);
-                }
                 app.modals.detectLocation.enabled = false;
             }
         }
@@ -132,18 +162,13 @@ app.modals = {
         el: app.el.$modalSearchForLocation,
         enabled: false,
         display: function(visible) {
-            console.log('searchForLocation?', visible);
-            if(visible) {
-                app.displayModalWrapper(true);
+            if(visible && !app.modals.searchForLocation.enabled) {
                 app.modals.searchForLocation.el.addClass('fadeIn');
                 app.modals.searchForLocation.el.removeClass('disabled');
                 app.modals.searchForLocation.enabled = true;
             }
             else {
                 app.modals.searchForLocation.el.addClass('fadeOut');
-                if(!app.modals.searchForLocation.enabled) {
-                    app.modals.modalFadeOutCallback(true);
-                }
                 app.modals.searchForLocation.enabled = false;
             }
         }
@@ -153,37 +178,20 @@ app.modals = {
         el: app.el.$modalViewRouteDetails,
         enabled: false,
         display: function(visible) {
-            console.log('viewRouteDetails?', visible);
-            if(visible) {
-                app.displayModalWrapper(true);
+            if(visible && !app.modals.viewRouteDetails.enabled) {
                 app.modals.viewRouteDetails.el.addClass('fadeIn');
                 app.modals.viewRouteDetails.el.removeClass('disabled');
                 app.modals.viewRouteDetails.enabled = true;
             }
             else {
                 app.modals.viewRouteDetails.el.addClass('fadeOut');
-                if(!app.modals.viewRouteDetails.enabled) {
-                    app.modals.modalFadeOutCallback(true);
-                }
-                app.modals.viewRouteDetails.enabled = false;
-            }
-        }
-    },
-
-    emptyModal: {
-        enabled: false,
-        display: function(visible) {
-            if(visible) {
-                app.modals.viewRouteDetails.enabled = true;
-            }
-            else {
                 app.modals.viewRouteDetails.enabled = false;
             }
         }
     },
 
     init: function() {
-        app.modals.currentModal = app.modals.detectLocation;
+        app.modals.display(app.modals.detectLocation);
     }
 
 }
@@ -192,18 +200,6 @@ app.modals = {
 //===================================
 //         DISPLAY METHODS
 //===================================
-
-app.displayModalWrapper = function(visible) {
-    if(visible) {
-        app.el.$modalWrapper.addClass('fadeIn');
-        app.el.$modalWrapper.removeClass('disabled');
-    }
-    else {
-        app.departTimers.clearAll();
-        app.el.$modalWrapper.removeClass('fadeIn');
-        app.el.$modalWrapper.addClass('fadeOut');
-    }
-}
 
 app.displayDetectLocation = function(visible) {
     app.currentModal = app.el.$modalDetectLocation;
@@ -282,7 +278,20 @@ app.displayAutoCompleteResults = function(results) {
 };
 
 app.displayRouteDetails = function(coords) {
+    let noInfo = false;
     // Wait for Basic Transit Stop Info request to come back
+    function displayError() {
+        app.el.$departureTimes.empty();
+        $('#routeTitle').html('Sorry, no information availible for this stop.')
+        $('#travelTime').html(`:(`);
+        const departTimer = $('<li>')
+            .addClass('departureTime')
+            .html(`--:-- <i class="fa fa-question" aria-hidden="true"></i>`)
+            .appendTo(app.el.$departureTimes
+        );
+        app.modals.display(app.modals.viewRouteDetails);
+    }
+
     $.when(app.getTransitStopInfo(coords))
     .done(function(stopInfo) {
         if($.isNumeric(stopInfo.stop_code)) {
@@ -295,77 +304,81 @@ app.displayRouteDetails = function(coords) {
                 const validatedPredictions = [];
 
                 // console.log('[PREDICTIONS]',predictions)
-
-                predictions.forEach(function(prediction) {
-                    if(prediction.direction !== undefined) {
-                        if(prediction.direction.prediction[0] !== undefined) {
-                            validatedPredictions.push(prediction);
-                        }
-                    }
-                });
-
-                // console.log(validatedPredictions);
-
-                earliestTime = validatedPredictions[0];
-
-                if(validatedPredictions.length > 1) {
-                    validatedPredictions.forEach(function(prediction) {
-                        if(prediction.direction.prediction[0].epochTime < earliestTime.direction.prediction[0].epochTime) {
-                            earliestTime = prediction;
+                if(predictions.length > 0) {
+                    predictions.forEach(function(prediction) {
+                        if(prediction.direction !== undefined) {
+                            if(prediction.direction.prediction[0] !== undefined) {
+                                validatedPredictions.push(prediction);
+                            }
                         }
                     });
-                } 
+                }
 
-                app.el.$departureTimes.empty();
-                app.departTimers.clearAll();
-                earliestTime.direction.prediction.forEach(function(prediction) {
-                    const formattedTravelTime = app.formatTime(app.currentRoute.route.directions.routes[0].legs[0].duration.value * 1000);
-                    $('#routeTitle').html(earliestTime.stopTitle)
-                    $('#travelTime').html(`Travel Time: ${formattedTravelTime}`);
-                    
-                    const departTimer = $('<li>')
-                        .addClass('departureTime')
-                        .html(`--:-- <i class="fa fa-question" aria-hidden="true"></i>`)
-                        .appendTo(app.el.$departureTimes
-                    );
-
-                    const timer = window.setInterval(function() {
-                        console.log('tick');
-                        let timeUntilDeparture = prediction.epochTime - Date.now();
-                        if(timeUntilDeparture <= 0) {
-                            console.log('Stoping Timer! Zeroed out!');
-                            clearInterval(timer);
-                        }
-                        else {
-                            const formattedTime = app.formatTime(timeUntilDeparture);
-                            const travelTime = app.currentRoute.route.directions.routes[0].legs[0].duration.value * 1000;
-                            let icon = '<i class="fa fa-check" aria-hidden="true"></i>'
-                            // routeTitle
-                            if((timeUntilDeparture - travelTime) <= 0) {
-                                icon = '<i class="fa fa-times" aria-hidden="true"></i>'
-                                departTimer.addClass('cantMakeIt');
+                // console.log(validatedPredictions);
+                if(validatedPredictions[0] !== undefined) {
+                    earliestTime = validatedPredictions[0];
+                    if(validatedPredictions.length > 1) {
+                        validatedPredictions.forEach(function(prediction) {
+                            if(prediction.direction.prediction[0].epochTime < earliestTime.direction.prediction[0].epochTime) {
+                                earliestTime = prediction;
                             }
-                            departTimer.html(`${formattedTime} ${icon}`);
-                        }
-                    },1000);
+                        });
+                    } 
 
-                    app.departTimers.timers.push(timer)
+                    app.el.$departureTimes.empty();
+                    app.departTimers.clearAll();
+                    console.log(earliestTime);
+                    earliestTime.direction.prediction.forEach(function(prediction) {
+                        const formattedTravelTime = app.formatTime(app.currentRoute.route.directions.routes[0].legs[0].duration.value * 1000);
+                        $('#routeTitle').html(earliestTime.stopTitle)
+                        $('#travelTime').html(`Travel Time: ${formattedTravelTime}`);
+                        
+                        const departTimer = $('<li>')
+                            .addClass('departureTime')
+                            .html(`--:-- <i class="fa fa-question" aria-hidden="true"></i>`)
+                            .appendTo(app.el.$departureTimes
+                        );
 
-                });
-                // app.el.$departureTimes.text('Details here!');
-                console.log('Calling viewRouteDetails display');
-                app.modals.display(app.modals.viewRouteDetails);
-                // app.modals.viewRouteDetails.display(true);
+                        const timer = window.setInterval(function() {
+                            console.log('tick');
+                            let timeUntilDeparture = prediction.epochTime - Date.now();
+                            if(timeUntilDeparture <= 0) {
+                                console.log('Stoping Timer! Zeroed out!');
+                                clearInterval(timer);
+                            }
+                            else {
+                                const formattedTime = app.formatTime(timeUntilDeparture);
+                                const travelTime = app.currentRoute.route.directions.routes[0].legs[0].duration.value * 1000;
+                                let icon = '<i class="fa fa-check" aria-hidden="true"></i>'
+                                // routeTitle
+                                if((timeUntilDeparture - travelTime) <= 0) {
+                                    icon = '<i class="fa fa-times" aria-hidden="true"></i>'
+                                    departTimer.addClass('cantMakeIt');
+                                }
+                                departTimer.html(`${formattedTime} ${icon}`);
+                            }
+                        },1000);
+
+                        app.departTimers.timers.push(timer)
+
+                    });
+                    // app.el.$departureTimes.text('Details here!');
+                    app.modals.display(app.modals.viewRouteDetails);
+                    // app.modals.viewRouteDetails.display(true);
+                }
+                else {
+                    displayError();
+                }
             })
             .fail(function(error) {
                 console.error('ERROR: ', error);
             });
         }
         else {
-            // The stop id provided was not a valid number
-            // (No stop info availible)
-            console.log('Invalid stop_code, NaN!');
+           displayError();
         }
+
+        
     })
     .fail(function(error) {
         console.log('ERROR: ', error);
@@ -415,11 +428,12 @@ app.generateMapMarker = function(place, type = 'transit') {
             app.userLocation.infoWindow.open(app.map, this);
 
             $('#userChangeLocation').on('click', function() {
-                console.log('CHANGE (modal)');
+                app.el.$closeSearch.removeClass('disabled');
+                app.modals.display(app.modals.searchForLocation);
             });
 
             $('#userDetectLocation').on('click', function() {
-                console.log('DETECT');
+                app.getUserLocation();
             });
         }
         else if(type === 'transit') {
@@ -487,7 +501,7 @@ app.getUserLocation = function() {
             
             app.setUserLocation(pos)
 
-            app.displayModalWrapper(false);
+            app.modals.modalWrapper.display(false);
 
         }, function(error) {
             if (error.code == error.PERMISSION_DENIED) {
@@ -519,9 +533,9 @@ app.getNearbyLocations = function(userLocation) {
                 reqUrl: 'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
                 params: {
                     key: app.apiKey,
-                    location: `${userLocation.lat},${userLocation.lng}`,
+                    location: app.mapCenter,
                     rankby: 'distance',
-                    type: 'light_rail_station'
+                    type: app.transitTypeSelected
                 },
                 xmlToJSON: false
             }
@@ -615,7 +629,7 @@ app.getPlaceDetails = function(placeId) {
     $.when(response).done(function(placeDetails) {
         if(placeDetails.status === 'OK') {
             app.setUserLocation(placeDetails.result.geometry.location);
-            app.displayModalWrapper(false);
+            app.modals.modalWrapper.display(false);
         }
     });
 };
@@ -671,6 +685,11 @@ app.initMap = function() {
     app.infoWindow = new google.maps.InfoWindow({map: null});
 
     app.getUserLocation();
+
+    google.maps.event.addListener(app.map, "center_changed", function() {
+        app.mapCenter = app.map.getCenter().toUrlValue();
+        
+    });
 };
 
 app.handleLocationError = function(browserHasGeolocation, infoWindow, pos) {
@@ -697,9 +716,7 @@ app.events = function() {
             app.getNearbyLocations(app.userLocation.location);
         }
         else if(buttonClicked.val() === 'closeModal') {
-            console.log('Close Modal');
-            app.displayModalWrapper(false);
-            app.modals.display(app.modals.emptyModal);
+            app.modals.modalWrapper.display(false);
         }
         else if(buttonClicked.val() === 'exitRouteView') {
             app.displayCurrentRoute(false);
@@ -707,6 +724,19 @@ app.events = function() {
             app.map.setCenter(app.userLocation.location);
             app.map.setZoom(app.userMapZoom);
         }
+        else if(buttonClicked.val() === 'tranistTypeRail') {
+            $(this).addClass('selected');
+            $('.bus.transitType').removeClass('selected');
+            app.transitTypeSelected = 'light_rail_station';
+        }
+        else if(buttonClicked.val() === 'tranistTypeBus') {
+            $(this).addClass('selected');
+            $('.rail.transitType').removeClass('selected');
+            app.transitTypeSelected = 'bus_station';
+        }
+
+        
+        
     });
 
     $('#searchForm').on('submit', function(event) {
@@ -729,8 +759,7 @@ app.events = function() {
         if(event.originalEvent.animationName === 'fadeOut') {
             $(event.target).addClass('disabled');
             $(event.target).removeClass('fadeOut');
-            const fadeInNext = !($(event.target).is(app.el.$modalWrapper));
-            app.modals.modalFadeOutCallback(fadeInNext);
+            app.modals.modalFadeOutCallback();
         }
 
         if(event.originalEvent.animationName === 'fadeIn') {
