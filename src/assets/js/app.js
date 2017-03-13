@@ -27,7 +27,7 @@ app.directionsService;
 
 app.userLocation = {
     location: {},
-    marker: {},
+    marker: null,
     infoWindow: {},
     setMap: function(map) {
         app.userLocation.marker.setMap(map);
@@ -73,6 +73,8 @@ app.infoWindow;
 
 app.userSearchInputResult;
 
+app.autocompleteList;
+
 app.departTimers = {
     timers: [],
     clearAll: function() {
@@ -89,6 +91,7 @@ app.el = {
     $results: $('#results'),
     $resultTimes: $('#resultTimes'),
     $searchField: $('#searchField'),
+    $searchFieldGhost: $('#searchFieldGhost'),
     $autocompleteWrapper: $('#autocompleteWrapper'),
     $autocompleteList: $('#autocompleteList'),
     $modalWrapper: $('#modalWrapper'),
@@ -239,21 +242,33 @@ app.displayNearbyMapMarkers = function(visible) {
 
 app.displayAutoCompleteResults = function(results) {
     const autocompleteItemClass = 'autocompleteItem';
-    const autocompleteList = [];
+    app.autocompleteList = [];
     app.el.$autocompleteList.empty();
-    
+    app.el.$searchFieldGhost.val('');
+
     if(results.length > 0) {
         results.forEach(function(result) {
-            autocompleteList.push({ label: result.description, value: result.place_id });
+            app.autocompleteList.push({ label: result.description, value: result.place_id });
         });
 
+        app.el.$searchFieldGhost.val(app.autocompleteList[0].label);
+        // Takes the length of the value in the input field and grabs the same number of chars from the first autocomplete
+        // This help the chars in the input field line up with the ghost text (not the best way to do this)
+        app.el.$searchField.val(app.el.$searchFieldGhost.val().slice(0, app.el.$searchField.val().length));
+        
+
         $(app.el.$searchField).autocomplete({
-            minLength:3,
-            source: autocompleteList,
-            autoFocus:true,
+            minLength:1,
+            source: app.autocompleteList,
             select: function(event, ui) {
                 event.preventDefault();
                 $(this).val(ui.item.label);
+                app.userSearchInputResult = ui.item.value;
+            },
+            focus: function(event, ui) {
+                event.preventDefault(); // or return false;
+                $(this).val(ui.item.label);
+                app.el.$searchFieldGhost.val(ui.item.label);
                 app.userSearchInputResult = ui.item.value;
             },
             messages: {
@@ -293,7 +308,7 @@ app.displayRouteDetails = function(coords) {
                 if(predictions.length > 0) {
                     predictions.forEach(function(prediction) {
                         if(prediction.direction !== undefined) {
-                            if(prediction.direction.prediction[0] !== undefined) {
+                            if(prediction.direction.prediction !== undefined) {
                                 validatedPredictions.push(prediction);
                             }
                         }
@@ -423,6 +438,7 @@ app.generateMapMarker = function(place, type = 'transit') {
             app.nearbyMapMarkers.infoWindow.setContent(content);
             app.nearbyMapMarkers.infoWindow.open(app.map, this);
 
+
             $('.viewDetails').on('click', function() {
                 app.setRouteTo(place.geometry.location);
                 app.displayRouteDetails(place.geometry.location);
@@ -447,13 +463,17 @@ app.generateNearbyLocationMarkers = function(locations) {
 
 app.setUserLocation = function(pos) {
     app.userLocation.location = pos;
-
-    app.userLocation.marker = app.generateMapMarker({
-        name: 'My Location',
-        geometry: {
-            location: app.userLocation.location
-        }
-    }, 'user');
+    if(app.userLocation.marker === null) {
+        app.userLocation.marker = app.generateMapMarker({
+            name: 'My Location',
+            geometry: {
+                location: app.userLocation.location
+            }
+        }, 'user');
+    }
+    else {
+        app.userLocation.marker.setPosition(app.userLocation.location);
+    }
     app.userLocation.marker.setIcon("assets/images/user.png");
     app.map.setCenter(app.userLocation.location);
 
@@ -718,14 +738,67 @@ app.events = function() {
         }
     })
 
-    app.el.$searchField.on('input', function(event) {
-        if($(this).val().length > 2) {
-            app.searchFor($(this).val());
-        }
-        else {
-            app.el.$autocompleteWrapper.addClass('hidden');
+    app.el.$searchField.on({
+        input: function() {
+            var uid = $('#ui-id-1');
+            if($(this).val().length > 0) {
+                uid.show();
+                app.searchFor($(this).val());
+            }
+            else {
+                app.el.$searchFieldGhost.val('');
+            }
+        },
+        focus: function() {
+            console.log('focus');
+            var uid = $('#ui-id-1');
+            if($(this).val().length > 0) {
+                uid.show();
+                app.el.$searchFieldGhost.val(app.autocompleteList[0].label);
+            }
+            else {
+                app.el.$searchFieldGhost.val('');
+            }
+            
+        },
+        blur: function() {
+            console.log('blur');
+            app.el.$searchFieldGhost.val('');
+        },
+        keyup: function(event) {
+            if($(this).val().length === 0) {
+                app.el.$searchFieldGhost.val('');
+            }
+
+            if(event.which === 13) {
+
+                app.el.$searchField.attr('placeholder', 'THIS IS A TESTSSDSFDSFSFSDFSDFSDFSDF');
+                console.log('keyup ENTER', event.which);
+            }
         }
     });
+
+    // app.el.$searchField.on('input', function(event) {
+    //     if($(this).val().length > 0) {
+    //         app.searchFor($(this).val());
+    //     }
+    //     // else {
+    //     //     app.el.$autocompleteWrapper.addClass('hidden');
+    //     // }
+    // });
+
+    // app.el.$searchField.on('focus', function(event) {
+    //     console.log('focus');
+    //     var uid = $('#ui-id-1');
+    //     uid.show();
+    //     console.log(uid);
+    //     // app.el.$autocompleteWrapper.removeClass('hidden');
+    // });
+
+    // app.el.$searchField.on('blur', function(event) {
+    //     console.log('blur');
+    //     // app.el.$autocompleteWrapper.addClass('hidden');
+    // });
 
     $(app.el.$modalWrapper).on("webkitAnimationEnd oAnimationEnd msAnimationEnd animationend", function(event) {
         if(event.originalEvent.animationName === 'fadeOut') {

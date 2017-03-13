@@ -11,21 +11,26 @@ h1
 button
     border-radius 2px
     border none
-    padding 1rem 2rem
+    padding 0 2rem
     color #FFFFFF
     background #333333
     cursor pointer
     transition background 0.3s ease
-    margin 0.3rem
     box-shadow 0px 0px 5px 0px rgba(0,0,0,0.3)
+    vertical-align middle
+    height 3rem
+    margin 0.5rem
+    
+main 
+    height 100%
     
 .container
     flexCenter()
+    height 100%
     
 .wrapper
     width $wrapperWidth
     height $wrapperHeight
-    min-height 600px
     width 100%
     background #FFFFFF
     display flex
@@ -66,3 +71,7 @@ button.rail
 button.transitType.selected
     background-color #454444
     box-shadow 0px 0px 0px 5px cadetblue
+    
+.gm-style-iw
+    display flex
+    justify-content center

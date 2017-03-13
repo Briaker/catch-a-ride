@@ -32,9 +32,10 @@
 
                                     <div id="searchForLocation" class="modalContent disabled">
                                         <h1>Search For Your Location</h1>
-                                        <form id="searchForm">
+                                        <form autocomplete="off" id="searchForm">
                                             <div id="searchBarWrapper">
-                                                <input id="searchField" type="search" placeholder="Enter an addresss" "/>
+                                                <input id="searchField" type="search" placeholder="Enter an addresss" />
+                                                <input id="searchFieldGhost" type="search" tabindex="-1" readonly/>
                                             </div>
                                             <button id="submitButton" type="submit">Go</button>
                                         </form>
