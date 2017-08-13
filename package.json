@@ -1,5 +1,5 @@
 {
-  "name": "npm-build-boilerplate",
+  "name": "catch-a-ride",
   "version": "0.0.1",
   "description": "A set of common build tasks written with npm scripts.",
   "author": "Damon Bauer <hello@damonbauer.me>",
@@ -32,7 +32,7 @@
     "watch:css": "stylus -u autoprefixer-stylus -w ./src/assets/css/main.styl -o ./src/assets/css/style.css",
     "watch": "concurrently --names \"serve, stylus\" --prefix name \"npm run serve\" \"npm run watch:css\"",
 
-    "postinstall": "npm run create-directories && npm run build && npm run watch"
+    "postinstall": "npm run build"
   },
   "devDependencies": {
     "autoprefixer": "^6.3.6",
